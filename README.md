@@ -2,7 +2,10 @@
 **Course:** CSET302 — Automata Theory and Computability  
 **Institution:** Bennett University (SCSET)  
 **Evaluation:** Milestone-II Final Demonstration & Evaluation  
-**Author / Group:** Aryan (`Aryan-yd`)  
+**Project Team Members:**
+- **Aryan** (Lead Developer, GitHub: [@Aryan-yd](https://github.com/Aryan-yd))
+- **Nischal Bhardwaj** (UI / UX & Visualization Developer)
+- **Ekalaya** (Simulation Engine & Testing Lead)  
 
 ---
 
@@ -192,11 +195,20 @@ node test_simulator.cjs
 ## Team contributions and acknowledgements
 
 ### Project Team (CSET302):
-- **Aryan (`Aryan-yd`)** — Lead Developer & Documentation:
-  - Designed and implemented the powerset conversion engine (`convertNFA`).
-  - Developed the single-page responsive user interface and dynamic SVG diagram renderer.
-  - Authored automated Node.js regression test harness (`test_simulator.cjs`).
-  - Prepared Milestone-II Technical Documentation and GitHub Repository according to university specifications.
+- **Aryan (`Aryan-yd`)** — Core Conversion Engine & Automation:
+  - Formulated and implemented the Breadth-First Search (BFS) powerset construction engine (`convertNFA`).
+  - Implemented canonical state-key hashing and dead-state ($\emptyset$) retention logic.
+  - Authored automated Node.js regression test harness (`test_simulator.cjs`) and managed repository publishing.
+
+- **Nischal Bhardwaj** — User Interface & Procedural Visualization:
+  - Designed the responsive single-page layout, styling, and color schemes (`index.html`).
+  - Developed the procedural SVG vector diagram renderer (`diagramSVG`) for both NFA and DFA graphs.
+  - Implemented dynamic input matrix rendering and client-side validation alerts (`readConfig`, `syncInput`).
+
+- **Ekalaya** — Simulation Engine & Verification:
+  - Implemented the deterministic string simulation engine and interactive path tracer (`simulate`).
+  - Built the DFA JSON serialization and file export module (`download`).
+  - Prepared the test case suite (`sample_cases.json`), verification matrices, and assisted with technical report editing.
 
 ### Acknowledgements:
 - **Bennett University, School of Computer Science Engineering and Technology (SCSET)** for the CSET302 curriculum guidelines.
