@@ -12,8 +12,8 @@
 - **Student / Group ID:** CSET302-Automata-Team
 - **Team Members:**
   1. **Aryan** (Lead Developer — GitHub: [@Aryan-yd](https://github.com/Aryan-yd))
-  2. **Nischal Bhardwaj** (UI / UX & Visualization Developer)
-  3. **Ekalaya** (Simulation Engine & Testing Lead)
+  2. **Nishchhal Bhardwaj** (UI / UX & Visualization Developer)
+  3. **Eklavya** (Simulation Engine & Testing Lead)
 - **Submission Date:** 24 November 2026
 - **Repository URL:** [https://github.com/Aryan-yd/Automata-NFA-DFA-SIMULATOR](https://github.com/Aryan-yd/Automata-NFA-DFA-SIMULATOR)
 
@@ -306,8 +306,8 @@ The constructed DFA contains exactly 3 reachable states ($D_0, D_1, D_2$). Hand-
 | Member | Specific Contributions | Technical Understanding Demonstrated |
 |:---|:---|:---|
 | **Aryan (`Aryan-yd`)** | • Algorithm design & BFS powerset conversion engine.<br>• Canonical state set hashing & dead-state ($\emptyset$) retention logic.<br>• Node.js automated regression test suite (`test_simulator.cjs`).<br>• Git repository architecture, version control & documentation orchestration. | • Mathematical formulation of powerset construction.<br>• Subset invariants and inductive equivalence proof.<br>• Dead state isolation and total DFA guarantees.<br>• Headless test harness architecture and DOM emulation. |
-| **Nischal Bhardwaj** | • Responsive single-page application UI design & styling (`index.html`).<br>• Dynamic procedural SVG vector diagram renderer (`diagramSVG`).<br>• Interactive transition matrix generation & dynamic DOM table updates.<br>• Client-side input validation and error feedback alerts. | • Cartesian coordinate mapping for multi-row state graphs.<br>• Quadratic Bézier arc path calculations and self-loop rendering.<br>• DOM manipulation, form synchronization, and state management.<br>• Visual accessibility and responsive UI guidelines. |
-| **Ekalaya** | • Deterministic string simulation engine and interactive path tracer (`simulate`).<br>• DFA JSON serialization and file export module (`download`).<br>• Test case repository curation (`sample_cases.json`) and edge-case verification.<br>• Technical project report authoring, theoretical proofs & demo prep. | • String simulation mechanics and state path trajectory evaluation.<br>• Set intersection criteria for final state acceptance ($S \cap F \ne \emptyset$).<br>• Structured JSON schema design for automata interoperability.<br>• Test-driven verification methodologies. |
+| **Nishchhal Bhardwaj** | • Responsive single-page application UI design & styling (`index.html`).<br>• Dynamic procedural SVG vector diagram renderer (`diagramSVG`).<br>• Interactive transition matrix generation & dynamic DOM table updates.<br>• Client-side input validation and error feedback alerts. | • Cartesian coordinate mapping for multi-row state graphs.<br>• Quadratic Bézier arc path calculations and self-loop rendering.<br>• DOM manipulation, form synchronization, and state management.<br>• Visual accessibility and responsive UI guidelines. |
+| **Eklavya** | • Deterministic string simulation engine and interactive path tracer (`simulate`).<br>• DFA JSON serialization and file export module (`download`).<br>• Test case repository curation (`sample_cases.json`) and edge-case verification.<br>• Technical project report authoring, theoretical proofs & demo prep. | • String simulation mechanics and state path trajectory evaluation.<br>• Set intersection criteria for final state acceptance ($S \cap F \ne \emptyset$).<br>• Structured JSON schema design for automata interoperability.<br>• Test-driven verification methodologies. |
 
 ---
 

@@ -4,8 +4,8 @@
 **Evaluation:** Milestone-II Final Demonstration & Evaluation  
 **Project Team Members:**
 - **Aryan** (Lead Developer, GitHub: [@Aryan-yd](https://github.com/Aryan-yd))
-- **Nischal Bhardwaj** (UI / UX & Visualization Developer)
-- **Ekalaya** (Simulation Engine & Testing Lead)  
+- **Nishchhal Bhardwaj** (UI / UX & Visualization Developer)
+- **Eklavya** (Simulation Engine & Testing Lead)  
 
 ---
 
@@ -200,12 +200,12 @@ node test_simulator.cjs
   - Implemented canonical state-key hashing and dead-state ($\emptyset$) retention logic.
   - Authored automated Node.js regression test harness (`test_simulator.cjs`) and managed repository publishing.
 
-- **Nischal Bhardwaj** — User Interface & Procedural Visualization:
+- **Nishchhal Bhardwaj** — User Interface & Procedural Visualization:
   - Designed the responsive single-page layout, styling, and color schemes (`index.html`).
   - Developed the procedural SVG vector diagram renderer (`diagramSVG`) for both NFA and DFA graphs.
   - Implemented dynamic input matrix rendering and client-side validation alerts (`readConfig`, `syncInput`).
 
-- **Ekalaya** — Simulation Engine & Verification:
+- **Eklavya** — Simulation Engine & Verification:
   - Implemented the deterministic string simulation engine and interactive path tracer (`simulate`).
   - Built the DFA JSON serialization and file export module (`download`).
   - Prepared the test case suite (`sample_cases.json`), verification matrices, and assisted with technical report editing.
