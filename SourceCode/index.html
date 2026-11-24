@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NFA to DFA Simulator</title>
+<style>
+:root{--bg:#f5f7fb;--panel:#fff;--ink:#172033;--muted:#667085;--line:#dfe5ef;--accent:#5145cd;--soft:#eeecff;--good:#067647;--bad:#b42318}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+header{background:linear-gradient(120deg,#171b35,#37308b);color:white;padding:30px max(20px,calc((100% - 1120px)/2)) 28px}
+header h1{margin:0 0 6px;font-size:clamp(25px,4vw,36px);letter-spacing:-.7px}
+header p{margin:0;color:#e0e3ff;max-width:760px}
+main{max-width:1120px;margin:24px auto;padding:0 18px 48px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+button,.tab{border:0;border-radius:10px;padding:10px 14px;font:inherit;font-weight:650;cursor:pointer;transition:.15s}
+.tab{background:#e9ecf5;color:#384152}
+.tab.active,button.primary{background:var(--accent);color:white}
+.tab:hover,button:hover{filter:brightness(.97)}
+.layout{display:grid;grid-template-columns:minmax(280px,.85fr) minmax(0,1.35fr);gap:18px;align-items:start}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 5px 18px #24304b08;margin-bottom:18px}
+h2{font-size:19px;margin:0 0 14px}
+h3{font-size:15px;margin:18px 0 8px}
+.sub{color:var(--muted);font-size:13px;margin-top:-7px;margin-bottom:16px}
+label{display:block;font-weight:650;font-size:13px;margin:12px 0 5px}
+input,select{width:100%;border:1px solid #cfd6e3;border-radius:9px;padding:10px 11px;background:white;color:var(--ink);font:inherit}
+input:focus,select:focus{outline:2px solid #c8c3ff;border-color:var(--accent)}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.secondary{background:#eef0f7;color:#30384b}
+.danger{color:var(--bad);font-size:13px;white-space:pre-line;margin-top:12px}
+.success{color:var(--good);font-size:13px;margin-top:12px}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:10px;margin-top:12px}
+table{border-collapse:collapse;width:100%;min-width:360px}
+th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;font-size:13px}
+th{background:#f6f7fb;font-weight:700}
+tr:last-child td{border-bottom:0}
+td input{min-width:70px;padding:7px 8px}
+.table-title{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.pill{display:inline-block;background:var(--soft);color:#4036a4;border-radius:100px;padding:4px 9px;font-size:12px;font-weight:700}
+.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.note{background:#f7f8fc;border:1px solid var(--line);padding:12px;border-radius:10px;color:#475467;font-size:13px}
+.machine-table{margin-top:8px}
+.machine-table th,.machine-table td{white-space:nowrap}
+.empty{color:var(--muted);padding:20px;text-align:center}
+.diagram-box{border:1px solid var(--line);border-radius:12px;background:#fbfcff;overflow:auto;margin-top:8px;min-height:190px}
+.diagram-box svg{display:block;width:100%;min-width:320px;height:auto}
+.diagram-legend{font-size:12px;color:var(--muted);margin-top:6px}
+.sequence{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.sequence span{padding:6px 9px;border-radius:8px;background:#f0efff;border:1px solid #dedaff;font-family:ui-monospace,monospace}
+.match{color:var(--good);font-weight:700}
+.mismatch{color:var(--bad);font-weight:700}
+.state-list{font-size:12px;color:var(--muted);margin-top:9px}
+.step-list{display:grid;gap:8px}
+.step{border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px}
+.step b{color:#343087}
+.hidden{display:none!important}
+footer{text-align:center;color:var(--muted);font-size:12px;margin-top:24px}
+@media(max-width:800px){.layout{grid-template-columns:1fr}.result-grid{grid-template-columns:1fr}header{padding:24px 20px}main{margin-top:16px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>NFA → DFA Simulator</h1>
+  <p>An interactive Automata Theory project. Define an NFA, follow subset construction, inspect the generated transition table, and test strings.</p>
+</header>
+<main>
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-view="convert">NFA → DFA</button>
+    <button class="tab" data-view="steps">Subset construction</button>
+    <button class="tab" data-view="simulate">Test strings</button>
+  </div>
+  <div class="layout">
+    <section class="card" id="editorCard">
+      <h2>NFA machine input</h2>
+      <p class="sub">Enter the states, alphabet, start state, accepting states, and destination sets.</p>
+      <div class="fields">
+        <div>
+          <label for="states">States (comma-separated)</label>
+          <input id="states" value="q0,q1,q2" spellcheck="false">
+        </div>
+        <div>
+          <label for="alphabet">Input alphabet</label>
+          <input id="alphabet" value="0,1" spellcheck="false">
+        </div>
+      </div>
+      <div class="fields">
+        <div>
+          <label for="start">Initial state</label>
+          <select id="start"><option>q0</option></select>
+        </div>
+        <div>
+          <label for="accept">Accepting states</label>
+          <input id="accept" value="q2" spellcheck="false">
+        </div>
+      </div>
+      <div id="tableHost"></div>
+      <div class="actions">
+        <button class="primary" id="convertBtn">Convert machine</button>
+        <button class="secondary" id="exampleBtn">Load example</button>
+        <button class="secondary" id="downloadBtn">Download DFA JSON</button>
+      </div>
+      <div id="message" aria-live="polite"></div>
+      <div class="note" style="margin-top:14px">
+        Each transition cell is a comma-separated set of destination states. Leave it blank when there is no transition. This version supports one-character symbols and does not use ε-transitions.
+      </div>
+    </section>
+
+    <section>
+      <div class="card">
+        <div class="table-title">
+          <h2>Generated DFA</h2>
+          <span class="pill" id="resultPill">Waiting for input</span>
+        </div>
+        <p class="sub">Each DFA state represents a set of NFA states.</p>
+        <div id="resultHost">
+          <div class="empty">Enter an NFA and click “Convert machine” to see the result.</div>
+        </div>
+        <div id="diagramSection" class="hidden" style="margin-top:18px">
+          <h3>State diagrams</h3>
+          <p class="sub">Start arrows indicate initial states. Double rings mark accepting states.</p>
+          <div class="result-grid">
+            <div>
+              <b>Original NFA</b>
+              <div id="originalDiagram" class="diagram-box"></div>
+            </div>
+            <div>
+              <b>Converted DFA</b>
+              <div id="convertedDiagram" class="diagram-box"></div>
+            </div>
+          </div>
+          <div class="diagram-legend">NFA edges display possible destinations; DFA edges display input symbols.</div>
+        </div>
+      </div>
+
+      <div class="card" id="simCard">
+        <h2>Test an input string</h2>
+        <p class="sub">Enter a string over the NFA alphabet to see the DFA path and acceptance result.</p>
+        <label for="sequenceInput">Input string</label>
+        <input id="sequenceInput" value="101" spellcheck="false" placeholder="e.g. 101">
+        <div class="actions">
+          <button class="primary" id="simulateBtn">Run simulation</button>
+        </div>
+        <div id="simResult" class="note" style="margin-top:14px">Convert a machine first, then run a simulation.</div>
+      </div>
+
+      <div class="card">
+        <h2>How conversion works</h2>
+        <div class="note">
+          <b>Subset construction:</b> begin with the singleton start set. For each reachable subset and input symbol, union the destinations of its NFA states. Each new subset becomes a DFA state. A DFA state is accepting when its subset contains at least one NFA accepting state.
+        </div>
+        <div class="state-list" id="algorithmText">
+          The empty subset is retained when reached, so every generated DFA state has a transition for each alphabet symbol.
+        </div>
+      </div>
+    </section>
+  </div>
+  <footer>Automata Theory project · Runs locally in your browser · No data is uploaded</footer>
+</main>
+
+<script>
+/**
+ * Shorthand helper for document.getElementById
+ * @param {string} id - HTML element ID
+ * @returns {HTMLElement|null}
+ */
+const $ = id => document.getElementById(id);
+
+/** @type {{nfa: Object, dfa: Object}|null} Currently active converted automaton model */
+let current = null;
+
+/** @type {Object.<string, string>} Cache for transition input values keyed by [state, symbol] */
+let tableMemory = Object.create(null);
+
+/**
+ * Built-in reference example: NFA recognizing strings ending in "01"
+ */
+const example = {
+  states: ['q0', 'q1', 'q2'],
+  alphabet: ['0', '1'],
+  start: 'q0',
+  accept: ['q2'],
+  transitions: {
+    q0: { 0: ['q0', 'q1'], 1: ['q0'] },
+    q1: { 0: [], 1: ['q2'] },
+    q2: { 0: [], 1: [] }
+  }
+};
+
+/**
+ * Splits a comma-separated string into clean trimmed tokens
+ * @param {string} s - Input string
+ * @returns {string[]}
+ */
+function splitCSV(s) {
+  return s.split(',').map(x => x.trim()).filter(Boolean);
+}
+
+/**
+ * Removes duplicate items from an array
+ * @param {Array} a - Source array
+ * @returns {Array} Array with unique items
+ */
+function uniq(a) {
+  return [...new Set(a)];
+}
+
+/**
+ * Escapes HTML entities for safe DOM rendering
+ * @param {string} s - Raw string
+ * @returns {string} Escaped HTML string
+ */
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[c]));
+}
+
+/**
+ * Escapes attribute values
+ * @param {string} s
+ * @returns {string}
+ */
+function escAttr(s) {
+  return esc(s);
+}
+
+/**
+ * Produces a canonical string key for a set of states (sorted JSON array)
+ * @param {Iterable<string>} s - State set
+ * @returns {string}
+ */
+function stateKey(s) {
+  return JSON.stringify([...s].sort());
+}
+
+/**
+ * Generates human-readable math set notation {q0, q1} or {∅}
+ * @param {Iterable<string>} s - State set
+ * @returns {string}
+ */
+function setLabel(s) {
+  return '{' + ([...s].sort().join(', ') || '∅') + '}';
+}
+
+/**
+ * Persists current input values in transition table to memory
+ */
+function rememberTable() {
+  document.querySelectorAll('[data-state]').forEach(el => {
+    tableMemory[JSON.stringify([el.dataset.state, el.dataset.input])] = el.value;
+  });
+}
+
+/**
+ * Updates start state dropdown options based on current states input
+ */
+function renderStart() {
+  const states = uniq(splitCSV($('states').value));
+  const old = $('start').value;
+  $('start').innerHTML = '';
+  states.forEach(q => {
+    const o = document.createElement('option');
+    o.value = q;
+    o.textContent = q;
+    $('start').append(o);
+  });
+  $('start').value = states.includes(old) ? old : (states[0] || '');
+}
+
+/**
+ * Renders dynamic transition matrix inputs based on states and alphabet
+ */
+function renderInputTable() {
+  const states = uniq(splitCSV($('states').value));
+  const alphabet = uniq(splitCSV($('alphabet').value));
+  let html = '<h3>Transition table</h3><div class="note">Each cell lists destination states separated by commas. Leave blank for no transition.</div><div class="table-wrap"><table><thead><tr><th>NFA state</th>' +
+    alphabet.map(a => `<th>Input ${esc(a)}</th>`).join('') + '</tr></thead><tbody>';
+
+  states.forEach(q => {
+    html += `<tr><th>${esc(q)}</th>` + alphabet.map(a => {
+      const k = JSON.stringify([q, a]);
+      const val = tableMemory[k] ?? '';
+      return `<td><input aria-label="${esc(q)} input ${esc(a)}" data-state="${escAttr(q)}" data-input="${escAttr(a)}" value="${escAttr(val)}" spellcheck="false" placeholder="e.g. q1, q2"></td>`;
+    }).join('') + '</tr>';
+  });
+
+  $('tableHost').innerHTML = html + '</tbody></table></div>';
+}
+
+/**
+ * Validates and reads NFA configuration from user inputs
+ * @throws {Error} Detailed validation error if syntax or semantics are invalid
+ * @returns {Object} Validated NFA definition
+ */
+function readConfig() {
+  rememberTable();
+  const states = uniq(splitCSV($('states').value));
+  const alphabet = uniq(splitCSV($('alphabet').value));
+  const start = $('start').value;
+  const accept = uniq(splitCSV($('accept').value));
+
+  if (!states.length) throw Error('Enter at least one state.');
+  if (!alphabet.length) throw Error('Enter at least one input symbol.');
+  if (states.length !== splitCSV($('states').value).length) throw Error('State names must be unique.');
+  if (alphabet.length !== splitCSV($('alphabet').value).length) throw Error('Input symbols must be unique.');
+  if (alphabet.some(a => [...a].length !== 1 || a === 'ε')) throw Error('Use one character per input symbol. Epsilon transitions are not supported.');
+  if (!states.includes(start)) throw Error('Initial state must be one of the listed states.');
+
+  for (const q of accept) {
+    if (!states.includes(q)) throw Error(`Unknown accepting state "${q}".`);
+  }
+
+  const transitions = Object.create(null);
+  for (const q of states) {
+    transitions[q] = Object.create(null);
+    for (const a of alphabet) {
+      const cell = [...document.querySelectorAll('[data-state]')].find(n => n.dataset.state === q && n.dataset.input === a);
+      if (!cell) throw Error('Transition table is incomplete.');
+      const dest = uniq(splitCSV(cell.value));
+      for (const d of dest) {
+        if (!states.includes(d)) throw Error(`Unknown destination "${d}" in row ${q}, input ${a}.`);
+      }
+      transitions[q][a] = dest;
+    }
+  }
+
+  return { states, alphabet, start, accept, transitions, type: 'nfa' };
+}
+
+/**
+ * Executes BFS subset construction to convert NFA to DFA
+ * @param {Object} m - Input NFA specification
+ * @returns {Object} Deterministic finite automaton specification
+ */
+function convertNFA(m) {
+  // Start state of DFA is singleton subset containing NFA start state {q0}
+  const sets = [[m.start]];
+  const seen = new Set([stateKey(sets[0])]);
+  const rows = [];
+
+  // Breadth-First Search over discovered subsets
+  for (let i = 0; i < sets.length; i++) {
+    const S = sets[i];
+    const go = Object.create(null);
+
+    for (const a of m.alphabet) {
+      const dest = new Set();
+      for (const q of S) {
+        for (const d of m.transitions[q][a]) {
+          dest.add(d);
+        }
+      }
+      const D = [...dest].sort();
+      const k = stateKey(D);
+      go[a] = D;
+
+      // Discovered a new reachable subset
+      if (!seen.has(k)) {
+        seen.add(k);
+        sets.push(D);
+      }
+    }
+    rows.push({ set: S, go });
+  }
+
+  return {
+    type: 'dfa',
+    states: sets,
+    alphabet: m.alphabet,
+    start: sets[0],
+    accept: sets.filter(S => S.some(q => m.accept.includes(q))),
+    rows,
+    source: m
+  };
+}
+
+/**
+ * Main conversion action handler
+ */
+function convert() {
+  setMessage('');
+  try {
+    const nfa = readConfig();
+    current = { nfa, dfa: convertNFA(nfa) };
+    renderResult();
+    $('resultPill').textContent = `${current.dfa.states.length} DFA states`;
+    $('resultPill').className = 'pill';
+    $('diagramSection').classList.remove('hidden');
+    $('simResult').className = 'note';
+    $('simResult').textContent = 'Machine converted. Enter a string and run the simulation.';
+  } catch (e) {
+    setMessage(e.message, true);
+    current = null;
+  }
+}
+
+/**
+ * Displays error or success message banner
+ * @param {string} t - Message content
+ * @param {boolean} [bad=false] - Whether it is an error
+ */
+function setMessage(t, bad = false) {
+  $('message').className = bad ? 'danger' : 'success';
+  $('message').textContent = t;
+}
+
+/**
+ * Generates HTML markup for the converted DFA transition table
+ * @param {Object} m - DFA object
+ * @returns {string} Table HTML
+ */
+function tableHTML(m) {
+  let html = '<div class="note">Initial state: <b>D0 = ' + esc(setLabel(m.start)) + '</b> · States: <b>' + m.states.length + '</b> · Inputs: <b>' + m.alphabet.length + '</b></div><div class="table-wrap machine-table"><table><thead><tr><th>DFA state (NFA subset)</th>' +
+    m.alphabet.map(a => '<th>' + esc(a) + '</th>').join('') + '<th>Accepting</th></tr></thead><tbody>';
+
+  for (let i = 0; i < m.states.length; i++) {
+    const S = m.states[i];
+    const r = m.rows[i];
+    const isFinal = S.some(q => m.source.accept.includes(q));
+    html += `<tr><th>${i === 0 ? '→ ' : ''}D${i}<br><span class="pill">${esc(setLabel(S))}</span></th>`;
+
+    for (const a of m.alphabet) {
+      const dest = r.go[a];
+      const j = m.states.findIndex(x => stateKey(x) === stateKey(dest));
+      html += `<td>D${j} <span class="state-list">${esc(setLabel(dest))}</span></td>`;
+    }
+    html += `<td class="${isFinal ? 'match' : ''}">${isFinal ? 'Yes' : 'No'}</td></tr>`;
+  }
+  return html + '</tbody></table></div>';
+}
+
+/**
+ * Generates step-by-step subset construction trace
+ * @returns {string} HTML step cards
+ */
+function renderSteps() {
+  const m = current.dfa;
+  let html = `<div class="step"><b>Initialize:</b> D0 = {${esc(m.source.start)}}.</div>`;
+
+  m.rows.forEach((r, i) => m.alphabet.forEach(a => {
+    const dest = r.go[a];
+    const j = m.states.findIndex(x => stateKey(x) === stateKey(dest));
+    html += `<div class="step"><b>D${i} = ${esc(setLabel(r.set))} on ${esc(a)}:</b> union of NFA destinations = ${esc(setLabel(dest))} → D${j}.</div>`;
+  }));
+
+  return html;
+}
+
+/**
+ * Updates result table and both SVG diagrams
+ */
+function renderResult() {
+  const m = current.dfa;
+  $('resultHost').innerHTML = tableHTML(m);
+  $('originalDiagram').innerHTML = diagramSVG(current.nfa);
+  $('convertedDiagram').innerHTML = diagramSVG(m);
+}
+
+/**
+ * Generates SVG visualization for NFA or DFA
+ * @param {Object} m - Automaton specification
+ * @returns {string} SVG markup
+ */
+function diagramSVG(m) {
+  const states = m.type === 'nfa' ? m.states : m.states.map((_, i) => 'D' + i);
+  const n = states.length;
+  const width = Math.max(420, n * 155 + 50);
+  const cols = Math.min(4, n);
+  const rows = Math.ceil(n / cols);
+  const height = Math.max(220, rows * 130 + 85);
+  const pos = Object.create(null);
+
+  states.forEach((q, i) => {
+    const row = Math.floor(i / cols);
+    const col = i % cols;
+    const count = Math.min(cols, n - row * cols);
+    pos[q] = {
+      x: count === 1 ? width / 2 : 90 + col * (width - 180) / (count - 1),
+      y: 70 + row * 120
+    };
+  });
+
+  const escXml = s => String(s).replace(/[&<>"']/g, c => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&apos;'
+  }[c]));
+
+  const marker = 'arr' + (m.type === 'nfa' ? 'N' : 'D');
+  let svg = `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg"><defs><marker id="${marker}" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#5145cd"/></marker></defs>`;
+  let groups = Object.create(null);
+  const edgeKey = (u, v) => JSON.stringify([u, v]);
+
+  for (const q of m.states) {
+    for (const a of m.alphabet) {
+      const rowIndex = m.states.findIndex(s => stateKey(s) === stateKey(q));
+      const targets = m.type === 'nfa' ? m.transitions[q][a] : [m.rows[rowIndex].go[a]];
+      for (const dest of targets) {
+        const u = m.type === 'nfa' ? q : states[rowIndex];
+        const v = m.type === 'nfa' ? dest : states[m.states.findIndex(s => stateKey(s) === stateKey(dest))];
+        const k = edgeKey(u, v);
+        if (!groups[k]) groups[k] = { u, v, labels: [] };
+        groups[k].labels.push(a);
+      }
+    }
+  }
+
+  Object.values(groups).forEach(e => {
+    const p = pos[e.u];
+    const r = pos[e.v];
+    const lab = escXml(e.labels.join(', '));
+    if (e.u === e.v) {
+      svg += `<path d="M${p.x - 16} ${p.y - 25} C${p.x - 55} ${p.y - 77},${p.x + 55} ${p.y - 77},${p.x + 16} ${p.y - 25}" fill="none" stroke="#5145cd" marker-end="url(#${marker})"/><text x="${p.x}" y="${p.y - 60}" text-anchor="middle" font-size="12" fill="#475467">${lab}</text>`;
+    } else {
+      const mx = (p.x + r.x) / 2;
+      const my = (p.y + r.y) / 2 - 13;
+      svg += `<path d="M${p.x} ${p.y} Q${mx} ${my} ${r.x} ${r.y}" fill="none" stroke="#5145cd" marker-end="url(#${marker})"/><text x="${mx}" y="${my - 5}" text-anchor="middle" font-size="12" fill="#475467">${lab}</text>`;
+    }
+  });
+
+  states.forEach((q, i) => {
+    const p = pos[q];
+    const isStart = m.type === 'nfa' ? q === m.start : stateKey(m.states[i]) === stateKey(m.start);
+    const isFinal = m.type === 'nfa' ? m.accept.includes(q) : m.accept.some(s => stateKey(s) === stateKey(m.states[i]));
+
+    svg += `<circle cx="${p.x}" cy="${p.y}" r="29" fill="white" stroke="#5145cd" stroke-width="2"/>${isFinal ? `<circle cx="${p.x}" cy="${p.y}" r="24" fill="none" stroke="#067647" stroke-width="1.5"/>` : ''}<text x="${p.x}" y="${p.y + 4}" text-anchor="middle" font-size="12" font-weight="700" fill="#172033">${escXml(q)}</text>${m.type === 'dfa' ? `<text x="${p.x}" y="${p.y + 46}" text-anchor="middle" font-size="10" fill="#667085">${escXml(setLabel(m.states[i]))}</text>` : ''}`;
+    if (isStart) {
+      svg += `<path d="M${p.x - 62} ${p.y} L${p.x - 31} ${p.y}" stroke="#5145cd" marker-end="url(#${marker})"/><text x="${p.x - 63}" y="${p.y - 8}" text-anchor="end" font-size="10" fill="#667085">start</text>`;
+    }
+  });
+
+  return svg + '</svg>';
+}
+
+/**
+ * Simulates DFA on input sequence and renders state execution path
+ */
+function simulate() {
+  if (!current) {
+    convert();
+    if (!current) return;
+  }
+  const m = current.dfa;
+  const str = $('sequenceInput').value;
+
+  for (const c of str) {
+    if (!m.alphabet.includes(c)) {
+      $('simResult').className = 'danger';
+      $('simResult').textContent = `Input symbol "${c}" is not in the alphabet.`;
+      return;
+    }
+  }
+
+  let id = 0;
+  const path = [0];
+  for (const c of str) {
+    const dest = m.rows[id].go[c];
+    id = m.states.findIndex(s => stateKey(s) === stateKey(dest));
+    path.push(id);
+  }
+
+  const accepted = m.states[id].some(q => m.source.accept.includes(q));
+  $('simResult').className = 'note';
+  $('simResult').innerHTML = `<b class="${accepted ? 'match' : 'mismatch'}">${accepted ? 'Accepted' : 'Rejected'}</b><div class="sequence">${path.map(i => `<span>D${i} = ${esc(setLabel(m.states[i]))}</span>`).join('<span>→</span>')}</div><div style="margin-top:8px">Final subset ${accepted ? 'contains' : 'does not contain'} an NFA accepting state.</div>`;
+}
+
+/**
+ * Exports converted DFA transition structure as JSON file
+ */
+function download() {
+  if (!current) {
+    convert();
+    if (!current) return;
+  }
+  const m = current.dfa;
+  const out = {
+    states: m.states.map((s, i) => ({ id: 'D' + i, subset: s })),
+    alphabet: m.alphabet,
+    start: 'D0',
+    accept: m.accept.map(s => 'D' + m.states.findIndex(x => stateKey(x) === stateKey(s))),
+    transitions: Object.fromEntries(m.rows.map((r, i) => [
+      'D' + i,
+      Object.fromEntries(m.alphabet.map(a => [a, 'D' + m.states.findIndex(s => stateKey(s) === stateKey(r.go[a]))]))
+    ]))
+  };
+
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' }));
+  a.download = 'converted-dfa.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/**
+ * Loads predefined "Ends in 01" example automaton into editor
+ */
+function loadExample() {
+  $('states').value = example.states.join(',');
+  $('alphabet').value = example.alphabet.join(',');
+  $('accept').value = example.accept.join(',');
+  tableMemory = Object.create(null);
+  for (const q of example.states) {
+    for (const a of example.alphabet) {
+      tableMemory[JSON.stringify([q, a])] = example.transitions[q][a].join(', ');
+    }
+  }
+  renderStart();
+  renderInputTable();
+  $('start').value = example.start;
+  convert();
+}
+
+/**
+ * Synchronizes input states and alphabet with UI table
+ */
+function syncInput() {
+  rememberTable();
+  renderStart();
+  renderInputTable();
+}
+
+// Event Listeners
+$('states').addEventListener('input', syncInput);
+$('alphabet').addEventListener('input', syncInput);
+$('convertBtn').onclick = convert;
+$('exampleBtn').onclick = loadExample;
+$('downloadBtn').onclick = download;
+$('simulateBtn').onclick = simulate;
+$('sequenceInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') simulate();
+});
+
+document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x === b));
+  const view = b.dataset.view;
+  $('editorCard').classList.toggle('hidden', view === 'simulate');
+  $('simCard').classList.toggle('hidden', view !== 'simulate');
+  if (view === 'steps') {
+    $('resultHost').innerHTML = renderSteps();
+  } else if (view === 'convert' && current) {
+    renderResult();
+  }
+}));
+
+// Initialize
+renderStart();
+renderInputTable();
+loadExample();
+</script>
+</body>
+</html>
