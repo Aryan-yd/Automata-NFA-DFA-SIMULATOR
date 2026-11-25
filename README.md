@@ -136,10 +136,12 @@ Automata-NFA-DFA-SIMULATOR/
 ├── README.md                    # Main project documentation (Milestone-II guide compliant)
 ├── PROJECT_REPORT.md            # Complete academic technical report (Markdown)
 ├── Technical_Project_Report.docx # Complete academic technical report (Word DOCX)
+├── Technical_Project_Report_Formatted.docx # Formatted Word DOCX (Black & White, University Template)
 ├── test_simulator.cjs           # Regression testing suite for Node.js
 ├── .gitignore                   # Ignored files and system artifacts
 ├── Report/
 │   ├── Technical_Project_Report.docx # Formatted editable Word DOCX report
+│   ├── Technical_Project_Report_Formatted.docx # Latest Black & White template DOCX
 │   ├── PROJECT_REPORT.md        # Technical Project Report in prescribed structure
 │   └── Guide.pdf                # University documentation & milestone guide
 ├── SourceCode/

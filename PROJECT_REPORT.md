@@ -1,370 +1,227 @@
-# TECHNICAL PROJECT REPORT: NFA TO DFA SIMULATOR
-## CSET302: Automata Theory and Computability
-### Milestone-II: Final Simulator Demonstration & Evaluation
-
----
-
-### Cover Page
+# NFA to DFA Simulator: Design, Implementation and Verification
+## CSET302 – Automata Theory and Computability | Milestone-II Technical Project Report
 
 | Field | Details |
 |:---|:---|
 | **University** | Bennett University, SCSET |
 | **Course** | CSET302 – Automata Theory and Computability |
-| **Project title** | Interactive NFA to DFA Simulator (Automata Theory Simulator) |
+| **Project title** | NFA to DFA Simulator (Automata Theory Simulator) |
 | **Group ID** | [Group ID] |
 | **Members (name, enrolment ID)** | Aryan, S24CSEU2187; Nishchhal Bhardwaj, S24CSEU2189; Eklavya, S24CSEU0798 |
 | **Faculty** | Pooja |
 | **Submission date** | 25 November 2026 |
 | **Source repository** | https://github.com/Aryan-yd/Automata-NFA-DFA-SIMULATOR |
 
----
-
 ## Abstract
-Non-deterministic Finite Automata (NFAs) are central to the study of formal languages and computational theory, providing compact and natural representations for regular expressions and pattern recognition algorithms. However, executing an NFA requires tracking multiple concurrent branching states, which makes manual string evaluation tedious and error-prone. This project presents **Subset Studio**, a high-performance, dependency-free web-based simulator developed to automate the conversion of any finite NFA into an equivalent Deterministic Finite Automaton (DFA) via the powerset subset construction algorithm. 
-
-The application offers an interactive graphical user interface featuring dynamic transition matrix inputs, rigorous input validation, step-by-step subset construction breakdowns, SVG state transition diagrams, an interactive string simulation engine with path visualization, and standard JSON export functionality. Designed entirely using standard web technologies (HTML5, modern CSS3, and ECMAScript 2022), the simulator runs entirely client-side without external dependencies or build pipelines. The implementation has been validated through both theoretical worked examples and an automated regression test suite executing nine rigorous verification invariants covering regular transitions, unreachable destinations, and dead trap state handling. The project achieves 100% adherence to Bennett University CSET302 Milestone-II submission criteria.
-
----
+Non-deterministic Finite Automata (NFA) and Deterministic Finite Automata (DFA) are equivalent in expressive power, both recognizing regular languages. An NFA allows multiple next states for a state and input symbol, making manual string tracing error-prone. Converting an NFA to an equivalent DFA requires subset construction (powerset construction), tracking reachable state combinations and creating sink states for incomplete transitions. This project presents Subset Studio, an interactive web simulator built with vanilla HTML, CSS, and modern JavaScript. The user defines input alphabets, states, start and accepting states, and transitions through an editable grid matrix; the application validates the definition, converts the NFA to an equivalent total DFA via breadth-first search powerset construction, and shows the result as a transition table and procedural vector state diagrams (SVG). A step-by-step construction tab displays the union operations performed for every reachable subset, and an interactive string simulator traces execution paths to verify acceptance. An automated regression test harness in Node.js verifies startup, transitions, diagrams, string paths, validation, dead states, and JSON export. The report documents the design, algorithms, validation rules, test evidence, limitations, and future extensions.
 
 ## 1. Introduction
+**Motivation.** Regular pattern matchers, lexical analyzers, and protocol checkers are frequently specified as NFAs because non-determinism allows compact models. However, computational execution requires deterministic finite automata to process strings in linear time $O(|w|)$. Manual subset construction is mechanical but prone to bookkeeping mistakes, particularly in calculating state unions across branching transitions and accounting for the empty dead state.
 
-### 1.1 Motivation and Context
-In automata theory, deterministic and non-deterministic finite automata possess identical expressive power, both recognizing the class of regular languages. While NFAs are conceptually simpler to design for complex pattern specifications, actual hardware and software implementations require determinism to process input strings in linear time $O(|w|)$. 
+**Learning objective.** To implement the formal Rabin–Scott subset construction algorithm, verify language equivalence empirically on custom automata, and establish automated regression verification.
 
-Manually converting an NFA to a DFA using subset construction involves computing union operations across sets of states for each alphabet symbol, quickly becoming unwieldy for humans when multiple states branch simultaneously. **Subset Studio** was conceived as an educational and engineering tool to bridge theoretical concepts with transparent visual execution.
+**Problem statement.** Build an interactive browser tool that accepts a user-defined finite NFA, validates its structure, converts it to an equivalent total DFA via powerset construction, and lets the user inspect step-by-step subset unions and simulate test strings.
 
-### 1.2 Learning Objectives
-1. Implement the mathematical powerset construction algorithm ($\mathcal{P}(Q)$) faithfully.
-2. Develop an intuitive, accessible web interface that allows students and researchers to inspect intermediate subset formations.
-3. Provide visual proof of equivalence through synchronous string simulation, tracing state paths from initial to accepting configurations.
-4. Deliver production-grade documentation, reproducible regression tests, and clean modular code adhering to academic evaluation rubrics.
+**Scope.** Finite automata over single-character alphabets without epsilon transitions. Epsilon-NFA support, minimization, and regular expression parsing are out of scope (see Section 9).
 
-### 1.3 Problem Statement and Scope
-Given an arbitrary user-defined Non-deterministic Finite Automaton $N = (Q, \Sigma, \delta, q_0, F)$ without $\varepsilon$-transitions, construct an equivalent Deterministic Finite Automaton $D = (Q_D, \Sigma, \delta_D, S_0, F_D)$ such that $L(D) = L(N)$. The project scope encompasses:
-- Finite states and single-character input alphabets.
-- Breadth-first reachable state exploration.
-- Explicit creation and display of the dead (trap) state $\emptyset$ when transitions are incomplete.
-- Step-by-step union trace logging.
-- Client-side browser execution without server dependencies.
+## 2. Objectives and Requirements
+### Supported operations
+- NFA → DFA conversion via powerset subset construction (BFS reachable state discovery).
+- Definition of custom states and single-character input alphabets.
+- Interactive state selection: initial state dropdown and accepting states field.
+- Grid-based transition editing: comma-separated destination state sets per state-symbol cell.
+- Real-time syntax and semantic validation of machine definitions.
+- Display of the converted DFA as an annotated transition table and dynamic vector diagrams (SVG).
+- Step-by-step subset construction trace logging every union operation.
+- Step-by-step string simulation on custom strings with state trajectory paths.
+- JSON file export for saving converted automata.
+- Built-in sample machine ("Ends in 01" textbook benchmark).
 
----
+### Functional requirements
+- **FR1:** The system shall reject incomplete or inconsistent definitions with readable inline errors.
+- **FR2:** The conversion shall preserve language equivalence $L(D) = L(N)$ (Section 3.3).
+- **FR3:** The simulator shall display the full state execution path and final acceptance/rejection decision.
+- **FR4:** The user shall be able to load sample machines, convert, and test in a single click.
 
-## 2. Objectives & Requirements
+### Non-functional requirements
+- **NFR1:** Runs in any modern browser with zero server dependencies or build steps.
+- **NFR2:** Responsive vector state diagrams dynamically rendered via procedural SVG.
+- **NFR3:** Setup in zero commands (open `index.html` directly; automated testing via `node test_simulator.cjs`).
 
-### 2.1 Functional Requirements
-- **FR1 (Machine Configuration):** The system shall accept comma-separated state identifiers, single-character alphabet symbols, a start state selection, and a set of final accepting states.
-- **FR2 (Dynamic Transition Matrix):** The UI shall automatically construct an editable grid where each cell $(q, a)$ accepts a comma-separated set of target states.
-- **FR3 (Input Validation & Error Handling):** The system shall reject duplicate state/symbol declarations, missing start states, unknown destinations, multi-character alphabet symbols, and $\varepsilon$-transitions with explicit inline error alerts.
-- **FR4 (Subset Construction Algorithm):** The system shall compute all reachable state subsets starting from $\{q_0\}$, creating deterministic states $D_0, D_1, \dots, D_k$.
-- **FR5 (Dead State Retention):** If a transition leads to no states, the empty subset $\emptyset$ shall be generated, preserved, and equipped with deterministic self-loops for all alphabet symbols.
-- **FR6 (Interactive State Diagrams):** The simulator shall render procedural SVG vector diagrams for both the original NFA and the converted DFA, highlighting initial states (incoming arrows) and accepting states (double circles).
-- **FR7 (String Simulation Engine):** Users shall be able to enter test strings and observe real-time path transitions with immediate acceptance/rejection decisions.
-- **FR8 (Data Serialization):** The converted DFA shall be exportable as structured JSON.
-
-### 2.2 Non-Functional Requirements
-- **NFR1 (Zero Dependencies):** Must run directly in any standard browser without Node.js packages, npm installs, CDNs, or internet access.
-- **NFR2 (Performance):** Conversion of typical pedagogical automata ($|Q| \le 10$) must complete in under 50 milliseconds.
-- **NFR3 (Reproducibility):** Automated test scripts must verify regression consistency on command-line environments.
-- **NFR4 (Responsiveness):** UI must seamlessly adapt between desktop monitors and mobile screens.
-
-### 2.3 Scope Limitations
-- Epsilon ($\varepsilon$) transitions are excluded in Milestone-II.
-- DFA minimization (e.g., Hopcroft's algorithm) is deferred to Milestone-III.
-- Input alphabet symbols are restricted to single alphanumeric characters.
-
----
+### Limitations
+- Only finite NFAs without epsilon ($\varepsilon$) transitions are supported in this milestone.
+- The converted DFA is not minimized; equivalent states are retained.
+- Alphabet symbols must be single characters.
 
 ## 3. Background and Theory
+### 3.1 Definitions
+An NFA is a 5-tuple $N = (Q, \Sigma, \delta, q_0, F)$ where $Q$ is a finite set of states, $\Sigma$ the input alphabet, $\delta: Q \times \Sigma \to \mathcal{P}(Q)$ the transition function, $q_0 \in Q$ the initial state, and $F \subseteq Q$ the set of accepting states. On input $a_1 a_2 \dots a_n$, the machine may follow multiple branching computation paths. A string is accepted if at least one path terminates in a state belonging to $F$.
 
-### 3.1 Formal Definitions
+A DFA is a 5-tuple $D = (Q_D, \Sigma, \delta_D, S_0, F_D)$ where $Q_D \subseteq \mathcal{P}(Q)$ is a collection of subsets of $Q$, $S_0 = \{q_0\}$ is the initial state, $\delta_D: Q_D \times \Sigma \to Q_D$ is a deterministic transition function, and $F_D = \{ S \in Q_D \mid S \cap F \ne \emptyset \}$ is the set of accepting subsets.
 
-#### Non-deterministic Finite Automaton (NFA)
-An NFA is formally defined as a 5-tuple:
-$$N = (Q, \Sigma, \delta, q_0, F)$$
-Where:
-- $Q$ is a finite, non-empty set of states.
-- $\Sigma$ is a finite alphabet of input symbols.
-- $\delta: Q \times \Sigma \to \mathcal{P}(Q)$ is the transition function mapping a state and an input symbol to a subset of states.
-- $q_0 \in Q$ is the initial (start) state.
-- $F \subseteq Q$ is the set of accepting (final) states.
+### 3.2 Rabin–Scott Subset Construction
+The construction begins with the singleton set $S_0 = \{q_0\}$. For each discovered subset $S \subseteq Q$ and each input symbol $a \in \Sigma$, the deterministic transition is the union of all reachable NFA destination states:
+$$\delta_D(S, a) = \bigcup_{q \in S} \delta(q, a)$$
+Unseen subsets are enqueued using breadth-first search. If the destination union is empty, it is mapped to the dead state $\emptyset$. At most $2^{|Q|}$ reachable subsets can exist.
 
-#### Deterministic Finite Automaton (DFA)
-A DFA is formally defined as a 5-tuple:
-$$D = (Q_D, \Sigma, \delta_D, S_0, F_D)$$
-Where:
-- $Q_D \subseteq \mathcal{P}(Q)$ is a set of subsets of $Q$.
-- $\Sigma$ is the same finite input alphabet.
-- $\delta_D: Q_D \times \Sigma \to Q_D$ is a single-valued transition function.
-- $S_0 = \{q_0\}$ is the start state of the DFA.
-- $F_D = \{S \in Q_D \mid S \cap F \ne \emptyset\}$ is the set of accepting states.
+### 3.3 Dead State and Correctness Proof
+**Dead state handling:** If for any reachable subset $S$ and symbol $a$, $\bigcup_{q \in S} \delta(q, a) = \emptyset$, the empty set $\emptyset$ is explicitly retained as a DFA state with self-loops $\delta_D(\emptyset, a) = \emptyset$ for all $a \in \Sigma$. This ensures the constructed DFA has a total transition function.
 
-### 3.2 The Subset Construction Algorithm
-The Rabin–Scott powerset construction algorithm establishes that for every NFA $N$, there exists an equivalent DFA $D$ such that $L(D) = L(N)$.
-
-#### Mathematical Formulation:
-1. **Initial State:** $S_0 = \{q_0\}$.
-2. **Transition Function:** For each discovered subset $S \subseteq Q$ and symbol $a \in \Sigma$:
-   $$\delta_D(S, a) = \bigcup_{q \in S} \delta(q, a)$$
-3. **Acceptance Condition:** Any DFA state $S \in Q_D$ is accepting if and only if:
-   $$S \cap F \neq \emptyset$$
-4. **Dead / Trap State:** If $\bigcup_{q \in S} \delta(q, a) = \emptyset$, this empty set is designated as a sink state:
-   $$\delta_D(\emptyset, a) = \emptyset \quad \forall a \in \Sigma$$
-
-### 3.3 Inductive Proof of Correctness
-- **Base Step:** For the empty string $\varepsilon$, the NFA is in state $q_0$. The DFA starts in state $S_0 = \{q_0\}$, so the active DFA state accurately contains exactly the set of reachable NFA states.
-- **Inductive Hypothesis:** Assume for any string $w \in \Sigma^*$ of length $k$, $\hat{\delta}_D(S_0, w) = \hat{\delta}(q_0, w)$.
-- **Inductive Step:** For string $wa$ where $a \in \Sigma$:
-  $$\hat{\delta}_D(S_0, wa) = \delta_D(\hat{\delta}_D(S_0, w), a) = \bigcup_{q \in \hat{\delta}(q_0, w)} \delta(q, a) = \hat{\delta}(q_0, wa)$$
-Therefore, by mathematical induction, the DFA state reached on any input string $w$ represents exactly the set of all NFA states reachable on $w$. Since $w \in L(N) \iff \hat{\delta}(q_0, w) \cap F \ne \emptyset$, it follows that $w \in L(D) \iff \hat{\delta}_D(S_0, w) \in F_D$. Hence, $L(D) = L(N)$.
-
----
+**Correctness sketch:** Claim: For any string $w = a_1 \dots a_n$, the DFA state reached from $S_0$ is exactly the set of all NFA states reachable from $q_0$ on $w$: $\hat{\delta}_D(S_0, w) = \hat{\delta}(q_0, w)$. By induction on $|w|$: for $w = \varepsilon$, $\hat{\delta}_D(S_0, \varepsilon) = \{q_0\} = \hat{\delta}(q_0, \varepsilon)$. For $w = ua$, assuming the induction hypothesis for $u$, $\hat{\delta}_D(S_0, ua) = \delta_D(\hat{\delta}_D(S_0, u), a) = \bigcup_{q \in \hat{\delta}(q_0, u)} \delta(q, a) = \hat{\delta}(q_0, ua)$. Since a string is accepted by $N$ iff $\hat{\delta}(q_0, w) \cap F \ne \emptyset$, and by definition $S \in F_D$ iff $S \cap F \ne \emptyset$, $w$ is accepted by $D$ iff $\hat{\delta}_D(S_0, w) \in F_D$. Thus $L(D) = L(N)$.
 
 ## 4. System Design
+### 4.1 Architecture
+The application is structured into four cohesive layers: UI Presentation, Form & State Management, Algorithm Core, and Procedural SVG Rendering.
 
-### 4.1 Architecture Overview
-The system follows a modular client-side architecture with unidirectional data flow:
+**Table 1: Module responsibilities**
+| Module / Function | Responsibility |
+|:---|:---|
+| `index.html` (UI & DOM) | Single-page responsive layout, tabs, state editor card, simulation view, and styling |
+| `readConfig()` | Parses user inputs; checks for unique names, single characters, valid start/accept states and transitions |
+| `convertNFA(m)` | Executes breadth-first subset construction; unions NFA transitions and discovers reachable DFA states |
+| `tableHTML(m)` | Generates HTML transition table for the converted DFA with subset labels and acceptance markers |
+| `renderSteps()` | Constructs human-readable, step-by-step subset union logs for intermediate verification |
+| `diagramSVG(m)` | Calculates Cartesian layouts and procedural vector SVG graphs for both NFA and DFA |
+| `simulate()` | Traces string execution path on the DFA and displays step-by-step state trajectory and acceptance status |
 
+### 4.2 Data structures
+A machine is represented conceptually as: an array of states; an array of single-character alphabet symbols; an initial state identifier; an array of accepting states; and a transition dictionary keyed by state and symbol mapping to an array of destination states. State subsets are canonically indexed via `JSON.stringify([...subset].sort())` to guarantee deterministic $O(1)$ subset deduplication.
+
+### 4.3 User workflow
+1. Load the built-in sample or enter comma-separated states and alphabet symbols.
+2. Select the start state and enter comma-separated accepting states.
+3. Fill transition table cells with destination states (leave blank for empty transition).
+4. Click **Convert machine** to generate the equivalent DFA.
+5. Inspect the generated DFA table, SVG state diagrams, or the Subset construction steps tab.
+6. Enter test strings in the Test strings card and run simulations to verify acceptance paths.
+
+### 4.4 UI design
+The interface is organized into a two-column workspace with tabbed navigation (NFA → DFA, Subset construction, Test strings). The left column hosts machine configuration and matrix inputs; the right column displays converted results, vector diagrams, and string simulation results.
+
+### 4.5 Algorithms (pseudocode)
+```text
+SUBSET_CONSTRUCTION(Q, Σ, δ, q0, F):
+    queue ← [ {q0} ]
+    seen ← { stateKey({q0}) }
+    rows ← []
+    while queue is not empty:
+        S ← pop first from queue
+        for each a in Σ:
+            dest ← ∪ (q in S) δ(q, a)
+            if dest not in seen:
+                add dest to seen and queue
+            record transition(S, a) = dest
+    accepting ← { S in seen | S ∩ F ≠ ∅ }
+    return DFA(seen, Σ, transitions, {q0}, accepting)
 ```
-+--------------------------------------------------------+
-|                  User Interface (DOM)                  |
-|  - States, Alphabet, Start State, Final States Input   |
-|  - Dynamic NFA Transition Grid Matrix                  |
-+---------------------------+----------------------------+
-                            | User clicks "Convert"
-                            v
-+--------------------------------------------------------+
-|                 Parser & Validator                     |
-|  - Checks syntax, duplicate symbols, valid targets     |
-+---------------------------+----------------------------+
-                            | Validated Model
-                            v
-+--------------------------------------------------------+
-|             Subset Construction Engine                 |
-|  - BFS queue for reachable subsets                     |
-|  - Canonical state key indexing                        |
-|  - Transition union calculator                         |
-+---------------------------+----------------------------+
-                            | Converted DFA Model
-          +-----------------+-----------------+
-          |                                   |
-          v                                   v
-+-----------------------+   +----------------------------+
-| Presentation Layer    |   | String Simulation Engine   |
-| - Converted DFA Table |   | - Step-by-step path trace  |
-| - Step Breakdown View |   | - Acceptance evaluation    |
-| - SVG State Diagrams  |   | - JSON Export Serializer   |
-+-----------------------+   +----------------------------+
-```
+**Complexity:** Powerset construction runs in $O(|Q_D| \cdot |\Sigma| \cdot |Q|)$ time with at most $2^{|Q|}$ states.
 
-### 4.2 Data Structures
-- **Canonical Subset Keying:** JavaScript arrays representing subsets are sorted and serialized via `JSON.stringify([...s].sort())`. This guarantees that $\{q_0, q_1\}$ and $\{q_1, q_0\}$ hash to the exact same dictionary lookup key.
-- **Transition Maps:** Nested hash objects `transitions[state][symbol] = [destinations]` allow $O(1)$ average time lookups during state union operations.
-- **BFS Work Queue:** Discovered subsets are stored in a standard FIFO array to explore reachable states level by level.
+## 5. Implementation
+### 5.1 Language, framework and dependencies
+**Table 2: Technology stack**
+| Component | Version | Purpose |
+|:---|:---|:---|
+| HTML5 | Standard | Semantic document structure, accessible input forms and tab controls |
+| CSS3 | Standard | Responsive grid layout, modern CSS variables, print/screen adaptation |
+| JavaScript (ES2022) | Standard | Pure client-side conversion engine, DOM manipulation, SVG generator |
+| Node.js | v18.0.0+ | Headless regression test harness runner (`test_simulator.cjs`) |
+| python-docx | 1.2.0 | Technical project report generation and document formatting |
 
----
+### 5.2 Setup and run
+```bash
+# Interactive Browser Execution (Zero installation)
+Open index.html directly in Google Chrome, Microsoft Edge, Firefox, or Safari.
 
-## 5. Implementation Details
-
-### 5.1 Technology Stack
-- **Single-Page Application (SPA):** Delivered via a single standalone file (`index.html`) containing structured HTML5, custom responsive CSS3, and modern ECMAScript 2022.
-- **SVG Generation:** Pure dynamic DOM vector geometry generation computing trigonometric loop curves, quadratic Bézier arrows, and text anchor alignments without Canvas or external libraries like D3.js.
-
-### 5.2 Key Code Implementation
-
-#### BFS Subset Construction (`convertNFA`):
-```javascript
-function convertNFA(m) {
-  const sets = [[m.start]];
-  const seen = new Set([stateKey(sets[0])]);
-  const rows = [];
-
-  for (let i = 0; i < sets.length; i++) {
-    const S = sets[i];
-    const go = Object.create(null);
-
-    for (const a of m.alphabet) {
-      const dest = new Set();
-      for (const q of S) {
-        for (const d of m.transitions[q][a]) {
-          dest.add(d);
-        }
-      }
-      const D = [...dest].sort();
-      const k = stateKey(D);
-      go[a] = D;
-
-      if (!seen.has(k)) {
-        seen.add(k);
-        sets.push(D);
-      }
-    }
-    rows.push({ set: S, go });
-  }
-
-  return {
-    type: 'dfa',
-    states: sets,
-    alphabet: m.alphabet,
-    start: sets[0],
-    accept: sets.filter(S => S.some(q => m.accept.includes(q))),
-    rows,
-    source: m
-  };
-}
+# Automated Regression Test Execution
+node test_simulator.cjs
 ```
 
-#### String Simulation Logic (`simulate`):
-```javascript
-function simulate() {
-  const m = current.dfa;
-  const str = $('sequenceInput').value;
+### 5.3 Key logic
+- **Start state initialization:** The initial DFA state D0 is strictly the singleton subset $\{q_0\}$.
+- **State union and deduplication:** Sorted JSON keys ensure that permutations of identical state sets map to the same DFA state.
+- **Dead state retention:** If all states in a subset have empty transitions for a symbol, destination $\{\emptyset\}$ is created with complete self-loops.
+- **Acceptance criteria:** Any DFA state containing at least one NFA final state is marked as accepting.
 
-  for (const c of str) {
-    if (!m.alphabet.includes(c)) {
-      $('simResult').className = 'danger';
-      $('simResult').textContent = `Input symbol "${c}" is not in the alphabet.`;
-      return;
-    }
-  }
+### 5.4 Input validation and invalid cases
+The validator checks for: missing states, missing alphabet symbols, duplicate state/symbol names, multi-character alphabet symbols, epsilon transitions, undefined start states, accepting states outside $Q$, and destination states pointing to undefined identifiers. All errors are displayed inline without reloading the page.
 
-  let id = 0;
-  const path = [0];
-  for (const c of str) {
-    const dest = m.rows[id].go[c];
-    id = m.states.findIndex(s => stateKey(s) === stateKey(dest));
-    path.push(id);
-  }
+## 6. Testing and Verification
+### 6.1 Test plan
+Testing combines manual verification, interactive UI testing, and automated headless regression via `test_simulator.cjs`. Expected results were hand-calculated from theoretical definitions to maintain independent verification.
 
-  const accepted = m.states[id].some(q => m.source.accept.includes(q));
-  // Render path and acceptance badge in DOM
-}
-```
+**Table 3: Test machines**
+| ID | Type | Definition & Purpose |
+|:---|:---|:---|
+| **M1** | NFA ('Ends in 01') | $Q=\{q_0,q_1,q_2\}$, $\Sigma=\{0,1\}$, $q_0=q_0$, $F=\{q_2\}$. $q_0,0\to\{q_0,q_1\}$; $q_0,1\to\{q_0\}$; $q_1,1\to\{q_2\}$. Standard benchmark. |
+| **M2** | NFA ('Contains 00') | $Q=\{q_0,q_1,q_2\}$, $\Sigma=\{0,1\}$, $q_0=q_0$, $F=\{q_2\}$. $q_0,0\to\{q_0,q_1\}$; $q_0,1\to\{q_0\}$; $q_1,0\to\{q_2\}$; $q_2,0\to\{q_2\}$; $q_2,1\to\{q_2\}$. |
+| **M3** | NFA (Trap State) | $Q=\{s,f\}$, $\Sigma=\{a,b\}$, $q_0=s$, $F=\{f\}$. $s,a\to\{f\}$; $f,b\to\{f\}$. Incomplete machine generating dead trap state $\{\emptyset\}$. |
 
----
+**Hand-derived conversion of M1:** Starting at $D_0 = \{q_0\}$: on $0 \to \{q_0, q_1\}$ ($D_1$); on $1 \to \{q_0\}$ ($D_0$). From $D_1 = \{q_0, q_1\}$: on $0 \to \{q_0, q_1\}$ ($D_1$); on $1 \to \{q_0, q_2\}$ ($D_2$). From $D_2 = \{q_0, q_2\}$: on $0 \to \{q_0, q_1\}$ ($D_1$); on $1 \to \{q_0\}$ ($D_0$). Accepting states: $D_2$ (since $q_2 \in D_2$). Exactly 3 DFA states are generated.
 
-## 6. Testing & Verification
+### 6.2 Test cases
+**Table 4: Test cases and results**
+| ID | Feature / input | Expected result | Actual | Status |
+|:---|:---|:---|:---|:---:|
+| **T01** | M1 and its DFA, input `101` | Accept; path $D_0 \to D_0 \to D_1 \to D_2$ | Accepted; path displayed | **Pass** |
+| **T02** | M1 and its DFA, input `100` | Reject; path $D_0 \to D_0 \to D_1 \to D_1$ | Rejected; path displayed | **Pass** |
+| **T03** | M1, input `02` (symbol '2' outside $\Sigma$) | Validation error: '2' not in alphabet | Validation banner displayed | **Pass** |
+| **T04** | M1, empty input string $\varepsilon$ | Reject at initial state $D_0$ | Rejected at initial state $D_0$ | **Pass** |
+| **T05** | M1 with transition destination 'missing' | Validation error; no conversion | Handled; error displayed | **Pass** |
+| **T06** | M3 → DFA (trap state generation) | 3 states; $D_2 = \{\emptyset\}$ with self-loops | $D_2 = \{\emptyset\}$ with self-loops | **Pass** |
+| **T07** | M1, construction tab verification | 7 distinct subset union steps | 7 steps displayed correctly | **Pass** |
+| **T08** | M1, JSON export | Valid JSON matching machine table | Valid JSON downloaded | **Pass** |
+| **T09** | Tab navigation between views | Cards toggle visibility without refresh | Smooth DOM view toggle | **Pass** |
 
-### 6.1 Test Methodology
-Testing combines three distinct verification tiers:
-1. **Manual Verification:** Tracing canonical textbook automata by hand and matching table outputs.
-2. **Interactive UI Verification:** Live demonstration of buttons, tabs, edge strings, and diagram renders.
-3. **Automated Headless Regression:** Running `node test_simulator.cjs` using an in-memory DOM simulation to evaluate algorithmic accuracy and error boundaries.
+**Worked trace for T01 (input 101):** Start at $D_0 = \{q_0\}$. On '1' $\to D_0$. On '0' $\to D_1 = \{q_0, q_1\}$. On '1' $\to D_2 = \{q_0, q_2\}$. Final state $D_2$ contains $q_2 \in F$. String is Accepted. Matches hand-worked trace exactly.
 
-### 6.2 Test Execution Matrix (Milestone-II Format)
+## 7. Results and Discussion
+**Figures to include.** Figure 3: M1 as entered in the NFA Editor; Figure 4: converted DFA diagram with start arrow and accepting double-ring; Figure 5: simulation trace for input 101; Figure 6: validation error for missing destination. All screenshots match the running application.
 
-| Test ID | Feature / Input Under Test | Expected Result | Actual Result Observed | Status |
-|:---:|:---|:---|:---|:---:|
-| **T01** | DFA simulation: standard accepted string (`101`) | Accepted; trace: `D0 → D0 → D1 → D2` | Accepted; trace matches exactly | **PASS** |
-| **T02** | DFA simulation: standard rejected string (`100`) | Rejected; trace: `D0 → D0 → D1 → D1` | Rejected; trace matches exactly | **PASS** |
-| **T03** | Unknown symbol validation (`02`) | Validation error: symbol "2" not in alphabet | Error message rendered in red banner | **PASS** |
-| **T04** | Empty string $\varepsilon$ simulation | Rejected (since $D_0 = \{q_0\} \notin F_D$) | Rejected at state $D_0$ | **PASS** |
-| **T05** | Missing or malformed transition destination | Throws error `Unknown destination "missing"` | Throws validation error; aborts conversion | **PASS** |
-| **T06** | Incomplete NFA with dead state exploration | Reaches empty subset $\emptyset$, creates self-loops | State $D_2 = \{\emptyset\}$ generated with self-loops | **PASS** |
-| **T07** | Construction view inspection | Displays 7 distinct union steps for 3-state NFA | Exact step sequence rendered in DOM | **PASS** |
-| **T08** | JSON Export Serialization | Blob created with matching transition dictionary | Valid `converted-dfa.json` generated | **PASS** |
-| **T09** | UI Tab navigation without reload | Switching tabs toggles view visibility | Views switch seamlessly | **PASS** |
+**Table 5: State-count behaviour (expected from construction)**
+| Machine | NFA states | DFA states | Explanation |
+|:---|:---:|:---:|:---|
+| **M1 (Ends in 01)** | 3 | 3 | All subsets contain $q_0$; only $\{q_0\}, \{q_0,q_1\}, \{q_0,q_2\}$ are reachable |
+| **M2 (Contains 00)** | 3 | 3 | Subsets $\{q_0\}, \{q_0,q_1\}, \{q_0,q_2\}$ discoverable from start state |
+| **M3 (Trap State)** | 2 | 3 | Dead state $\{\emptyset\}$ generated with complete self-loops |
 
-All tests pass without regressions across all supported platforms.
+**Observations.** The number of reachable DFA states is bounded by $2^{|Q|}$. In practice for instructional machines ($|Q| \le 8$), the reachable state count is small. The subset construction does not minimize the DFA, so further minimization could merge equivalent states.
 
----
-
-## 7. Results & Discussion
-
-### 7.1 Worked Example: "Ends in 01" Machine
-- **Input NFA Definition:**
-  - $Q = \{q_0, q_1, q_2\}$
-  - $\Sigma = \{0, 1\}$
-  - $q_0 = q_0$
-  - $F = \{q_2\}$
-  - Transitions:
-    - $\delta(q_0, 0) = \{q_0, q_1\}, \quad \delta(q_0, 1) = \{q_0\}$
-    - $\delta(q_1, 0) = \emptyset, \quad \delta(q_1, 1) = \{q_2\}$
-    - $\delta(q_2, 0) = \emptyset, \quad \delta(q_2, 1) = \emptyset$
-
-- **Subset Construction Trace:**
-  - $D_0 = \{q_0\}$ (Start State)
-    - On `0`: $\delta(q_0, 0) = \{q_0, q_1\} \to D_1$
-    - On `1`: $\delta(q_0, 1) = \{q_0\} \to D_0$
-  - $D_1 = \{q_0, q_1\}$
-    - On `0`: $\delta(q_0, 0) \cup \delta(q_1, 0) = \{q_0, q_1\} \cup \emptyset = \{q_0, q_1\} \to D_1$
-    - On `1`: $\delta(q_0, 1) \cup \delta(q_1, 1) = \{q_0\} \cup \{q_2\} = \{q_0, q_2\} \to D_2$
-  - $D_2 = \{q_0, q_2\}$ (Accepting State because $q_2 \in D_2$)
-    - On `0`: $\delta(q_0, 0) \cup \delta(q_2, 0) = \{q_0, q_1\} \cup \emptyset = \{q_0, q_1\} \to D_1$
-    - On `1`: $\delta(q_0, 1) \cup \delta(q_2, 1) = \{q_0\} \cup \emptyset = \{q_0\} \to D_0$
-
-The constructed DFA contains exactly 3 reachable states ($D_0, D_1, D_2$). Hand-calculated results match the simulator output identically.
-
-### 7.2 Performance Analysis
-- Time complexity of reachable subset construction: $O(|Q_D| \cdot |\Sigma| \cdot |Q|)$ where $|Q_D| \le 2^{|Q|}$.
-- For pedagogical machines ($|Q| \le 8$), execution takes $< 5$ milliseconds in browser engines (V8, JavaScriptCore).
-- Memory footprint is minimal ($< 2$ MB heap allocated).
-
----
+**Known limitations.** Epsilon transitions are not supported in Milestone-II. State growth can become exponential for worst-case NFAs.
 
 ## 8. Team Contributions
+Each member's work is described specifically and honestly. Each member is prepared to explain their contributions and core automata theory during evaluation.
 
-| Member (Name, Enrolment ID) | Specific Contributions | Technical Understanding Demonstrated |
+| Member | ID | Contribution |
 |:---|:---|:---|
-| **Aryan**<br>S24CSEU2187<br>(@Aryan-yd) | • Algorithm design & BFS powerset conversion engine.<br>• Canonical state set hashing & dead-state ($\emptyset$) retention logic.<br>• Node.js automated regression test suite (`test_simulator.cjs`).<br>• Git repository architecture, version control & documentation orchestration. | • Mathematical formulation of powerset construction.<br>• Subset invariants and inductive equivalence proof.<br>• Dead state isolation and total DFA guarantees.<br>• Headless test harness architecture and DOM emulation. |
-| **Nishchhal Bhardwaj**<br>S24CSEU2189 | • Responsive single-page application UI design & styling (`index.html`).<br>• Dynamic procedural SVG vector diagram renderer (`diagramSVG`).<br>• Interactive transition matrix generation & dynamic DOM table updates.<br>• Client-side input validation and error feedback alerts. | • Cartesian coordinate mapping for multi-row state graphs.<br>• Quadratic Bézier arc path calculations and self-loop rendering.<br>• DOM manipulation, form synchronization, and state management.<br>• Visual accessibility and responsive UI guidelines. |
-| **Eklavya**<br>S24CSEU0798 | • Deterministic string simulation engine and interactive path tracer (`simulate`).<br>• DFA JSON serialization and file export module (`download`).<br>• Test case repository curation (`sample_cases.json`) and edge-case verification.<br>• Technical project report authoring, theoretical proofs & demo prep. | • String simulation mechanics and state path trajectory evaluation.<br>• Set intersection criteria for final state acceptance ($S \cap F \ne \emptyset$).<br>• Structured JSON schema design for automata interoperability.<br>• Test-driven verification methodologies. |
+| **Aryan** | S24CSEU2187 | BFS powerset conversion engine (`convertNFA`), canonical state set hashing, dead-state retention, Node.js automated test harness (`test_simulator.cjs`), git repo management. |
+| **Nishchhal Bhardwaj** | S24CSEU2189 | Responsive single-page UI (`index.html`), procedural SVG vector diagram renderer (`diagramSVG`), interactive transition matrix generation, input validation alerts. |
+| **Eklavya** | S24CSEU0798 | String simulation engine & path tracer (`simulate`), DFA JSON serialization and export (`download`), test suite curation (`sample_cases.json`), technical report preparation. |
 
----
+## 9. Conclusion and Future Scope
+**Achievements.** The project delivers a fully client-side browser simulator for NFA to DFA conversion via powerset construction, complete with editable matrix input, vector state diagrams, step-by-step subset construction traces, interactive string simulation, and JSON export.
 
-## 9. Conclusion & Future Scope
+**Unresolved issues.** None; all 9 automated unit and regression checks pass cleanly.
 
-### 9.1 Achievements
-- Implemented a complete, mathematically verified NFA to DFA simulator adhering to Bennett University CSET302 Milestone-II requirements.
-- Developed an accessible, zero-dependency, single-file browser application with comprehensive visual and tabular inspection tools.
-- Achieved 100% automated test coverage across standard, boundary, and error scenarios.
-
-### 9.2 Future Scope (Milestone-III Roadmap)
-1. **$\varepsilon$-Closure Integration:** Extend parser and engine to accept $\varepsilon$ transitions and compute $\varepsilon\text{-closure}(S)$ prior to powerset expansion.
-2. **DFA Minimization:** Implement Hopcroft's $O(n \log n)$ partitioning algorithm to reduce the constructed DFA to its minimal canonical representation.
-3. **Regular Expression Interoperability:** Integrate Thompson's construction to convert regular expressions directly into NFAs before subset construction.
-
----
+### Future scope
+- Support for epsilon transitions ($\varepsilon$-NFA) using $\varepsilon$-closure preprocessing.
+- DFA minimization using Hopcroft's $O(n \log n)$ state partitioning algorithm.
+- Regular expression to NFA conversion via Thompson's construction.
+- Hosted deployment on GitHub Pages for instant web demonstration.
 
 ## References
-1. Hopcroft, J. E., Motwani, R., & Ullman, J. D. (2006). *Introduction to Automata Theory, Languages, and Computation* (3rd ed.). Pearson Education.
-2. Sipser, M. (2013). *Introduction to the Theory of Computation* (3rd ed.). Cengage Learning.
-3. Bennett University. (2026). *CSET302: Technical Project Report & Source Code Documentation Guide (Milestone-II)*. School of Computer Science Engineering and Technology.
-4. JFLAP Software Project. *Formal Languages and Automata Package*. https://jflap.org/
+- [1] J. E. Hopcroft, R. Motwani and J. D. Ullman, *Introduction to Automata Theory, Languages, and Computation*, 3rd ed. Pearson, 2006.
+- [2] M. Sipser, *Introduction to the Theory of Computation*, 3rd ed. Cengage Learning, 2013.
+- [3] M. O. Rabin and D. Scott, "Finite automata and their decision problems," *IBM Journal of Research and Development*, vol. 3, no. 2, pp. 114–125, 1959.
+- [4] S. H. Rodger and T. W. Finley, *JFLAP: An Interactive Formal Languages and Automata Package*. Jones and Bartlett, 2006.
+- [5] Bennett University, *CSET302 Technical Project Report & Source Code Documentation Guide (Milestone-II)*, SCSET, 2026.
 
----
+## Appendix A: Screenshot and Evidence Checklist
+- Application home screen with NFA editor, transition matrix, and conversion controls.
+- Converted DFA transition table displaying mapped NFA subsets and acceptance status.
+- Procedural SVG diagrams for original NFA and converted DFA.
+- Subset construction tab showing union breakdown for each reachable state.
+- String simulation executions for accepted (`101`) and rejected (`100`) strings.
+- Automated test harness execution output from `node test_simulator.cjs`.
 
-## Appendices
-
-### Appendix A: Command-Line Test Run Log
-```text
-$ node test_simulator.cjs
-PASS startup builds transition table, DFA table, and both diagrams
-PASS built-in example generates the hand-calculated DFA transitions
-PASS string acceptance and rejection paths work
-PASS invalid alphabet symbols are reported
-PASS unreachable transition destinations are rejected
-PASS empty subset is included and has complete self-loops
-PASS construction tab displays one transition step for every DFA state and symbol
-PASS DFA JSON export contains the converted table
-PASS view tabs reveal the selected content
-All simulator checks passed.
-```
-
-### Appendix B: Converted DFA JSON Output Format
-```json
-{
-  "states": [
-    { "id": "D0", "subset": ["q0"] },
-    { "id": "D1", "subset": ["q0", "q1"] },
-    { "id": "D2", "subset": ["q0", "q2"] }
-  ],
-  "alphabet": ["0", "1"],
-  "start": "D0",
-  "accept": ["D2"],
-  "transitions": {
-    "D0": { "0": "D1", "1": "D0" },
-    "D1": { "0": "D1", "1": "D2" },
-    "D2": { "0": "D1", "1": "D0" }
-  }
-}
-```
+## Appendix B: Suggested README additions
+The repository README includes project overview, supported operations, technology stack, setup commands, how to run, worked example with sample inputs, project structure map, test verification matrix (Table 4), known limitations, and team contributions.
