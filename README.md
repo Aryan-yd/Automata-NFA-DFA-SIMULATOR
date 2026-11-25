@@ -132,10 +132,12 @@ All 9 unit and integration tests will execute and report passing status.
 Automata-NFA-DFA-SIMULATOR/
 ├── index.html                   # Root entry point for browser & GitHub Pages
 ├── README.md                    # Main project documentation (Milestone-II guide compliant)
-├── PROJECT_REPORT.md            # Complete academic technical report
+├── PROJECT_REPORT.md            # Complete academic technical report (Markdown)
+├── Technical_Project_Report.docx # Complete academic technical report (Word DOCX)
 ├── test_simulator.cjs           # Regression testing suite for Node.js
 ├── .gitignore                   # Ignored files and system artifacts
 ├── Report/
+│   ├── Technical_Project_Report.docx # Formatted editable Word DOCX report
 │   ├── PROJECT_REPORT.md        # Technical Project Report in prescribed structure
 │   └── Guide.pdf                # University documentation & milestone guide
 ├── SourceCode/
