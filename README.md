@@ -2,10 +2,12 @@
 **Course:** CSET302 — Automata Theory and Computability  
 **Institution:** Bennett University (SCSET)  
 **Evaluation:** Milestone-II Final Demonstration & Evaluation  
+**Faculty:** Pooja  
+**Submission Date:** 25 November 2026  
 **Project Team Members:**
-- **Aryan** (Lead Developer, GitHub: [@Aryan-yd](https://github.com/Aryan-yd))
-- **Nishchhal Bhardwaj** (UI / UX & Visualization Developer)
-- **Eklavya** (Simulation Engine & Testing Lead)  
+- **Aryan** (Lead Developer, Enrolment ID: S24CSEU2187, GitHub: [@Aryan-yd](https://github.com/Aryan-yd))
+- **Nishchhal Bhardwaj** (UI / UX & Visualization Developer, Enrolment ID: S24CSEU2189)
+- **Eklavya** (Simulation Engine & Testing Lead, Enrolment ID: S24CSEU0798)  
 
 ---
 

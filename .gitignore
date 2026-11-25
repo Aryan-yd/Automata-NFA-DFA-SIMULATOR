@@ -18,6 +18,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Office temporary lock files
+~$*
+*.tmp
+
 # Extracted scratch folders
 extracted/
 screenshot_test.png
