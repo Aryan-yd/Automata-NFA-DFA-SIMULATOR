@@ -1,3 +1,28 @@
+```text
+================================================================================
+                               BENNETT UNIVERSITY
+                                THE TIMES GROUP
+                                
+                                  SIMULATOR:
+                           CONVERSION OF NFA TO DFA
+                         A MINI-PROJECT REPORT (CSET302)
+                        Automata Theory and Computability
+                        
+                                  SUBMITTED BY
+                              ARYAN (S24CSEU2187)
+                       NISHCHHAL BHARDWAJ (S24CSEU2189)
+                            EKLAVYA (S24CSEU0798)
+                            
+                                  SUBMITTED TO
+                                   MS. POOJA
+                                   
+             SCHOOL OF COMPUTER SCIENCE ENGINEERING AND TECHNOLOGY,
+                               BENNETT UNIVERSITY
+                  GREATER NOIDA, 201310, UTTAR PRADESH, INDIA
+                                 NOVEMBER 2026
+================================================================================
+```
+
 # NFA to DFA Simulator: Design, Implementation and Verification
 ## CSET302 – Automata Theory and Computability | Milestone-II Technical Project Report
 
@@ -5,15 +30,25 @@
 |:---|:---|
 | **University** | Bennett University, SCSET |
 | **Course** | CSET302 – Automata Theory and Computability |
-| **Project title** | NFA to DFA Simulator (Automata Theory Simulator) |
+| **Project title** | Simulator: Conversion of NFA to DFA |
 | **Group ID** | [Group ID] |
-| **Members (name, enrolment ID)** | Aryan, S24CSEU2187; Nishchhal Bhardwaj, S24CSEU2189; Eklavya, S24CSEU0798 |
-| **Faculty** | Pooja |
-| **Submission date** | 25 November 2026 |
+| **Members (name, enrolment ID)** | Aryan (S24CSEU2187); Nishchhal Bhardwaj (S24CSEU2189); Eklavya (S24CSEU0798) |
+| **Faculty** | Ms. Pooja |
+| **Submission date** | November 2026 |
 | **Source repository** | https://github.com/Aryan-yd/Automata-NFA-DFA-SIMULATOR |
 
 ## Abstract
 Non-deterministic Finite Automata (NFA) and Deterministic Finite Automata (DFA) are equivalent in expressive power, both recognizing regular languages. An NFA allows multiple next states for a state and input symbol, making manual string tracing error-prone. Converting an NFA to an equivalent DFA requires subset construction (powerset construction), tracking reachable state combinations and creating sink states for incomplete transitions. This project presents Subset Studio, an interactive web simulator built with vanilla HTML, CSS, and modern JavaScript. The user defines input alphabets, states, start and accepting states, and transitions through an editable grid matrix; the application validates the definition, converts the NFA to an equivalent total DFA via breadth-first search powerset construction, and shows the result as a transition table and procedural vector state diagrams (SVG). A step-by-step construction tab displays the union operations performed for every reachable subset, and an interactive string simulator traces execution paths to verify acceptance. An automated regression test harness in Node.js verifies startup, transitions, diagrams, string paths, validation, dead states, and JSON export. The report documents the design, algorithms, validation rules, test evidence, limitations, and future extensions.
+
+### Project at a glance
+| Dimension | Implemented result |
+|:---|:---|
+| **Scope** | Deterministic, complete NFA → DFA conversion; subset construction; validation; step-by-step simulation |
+| **Frontend** | Vanilla HTML5, responsive modern CSS3, ECMAScript 2022, Procedural SVG vector diagrams |
+| **Algorithms** | Pure JavaScript modules: subset construction BFS, canonical set keying, string path runner, JSON export |
+| **Samples** | Built-in reference machine ('Ends in 01' 3-state benchmark) |
+| **Verification** | 9 automated regression tests (9 passed, 0 failed via `node test_simulator.cjs`), hand-derived test cases |
+| **Release state** | Runs locally by opening `index.html` directly; GitHub repository published |
 
 ## 1. Introduction
 **Motivation.** Regular pattern matchers, lexical analyzers, and protocol checkers are frequently specified as NFAs because non-determinism allows compact models. However, computational execution requires deterministic finite automata to process strings in linear time $O(|w|)$. Manual subset construction is mechanical but prone to bookkeeping mistakes, particularly in calculating state unions across branching transitions and accounting for the empty dead state.
